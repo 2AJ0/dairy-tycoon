@@ -27,7 +27,8 @@ class ExampleRobolectricTest {
 
   @Test
   fun `strict FIFO selling consumes oldest batch first`() {
-    val viewModel = GameViewModel()
+    val application = ApplicationProvider.getApplicationContext<android.app.Application>()
+    val viewModel = GameViewModel(application)
     // Initial inventory has 1 batch of 25 Raw Milk (Day 1)
     assertEquals(25, viewModel.gameState.value.inventory.first().quantity)
 
@@ -52,7 +53,8 @@ class ExampleRobolectricTest {
 
   @Test
   fun `dumping spoiled goods clears ruined inventory batches`() {
-    val viewModel = GameViewModel()
+    val application = ApplicationProvider.getApplicationContext<android.app.Application>()
+    val viewModel = GameViewModel(application)
     // Advance days to trigger aging and spoilage
     repeat(4) {
       viewModel.endDay()
