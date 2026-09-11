@@ -1,0 +1,1 @@
+sed -i '' 's/val repFactor = (current.reputation \* 0.003) \* current.playerSkills.silverTongueRepBonusMultiplier/val repFactor = (current.reputation \/ 100.0) \* current.playerSkills.silverTongueRepBonusMultiplier/g' app/src/main/java/com/example/viewmodel/GameViewModel.kt

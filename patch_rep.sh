@@ -1,0 +1,3 @@
+sed -i '' 's/val updatedReputation = (currentState.reputation + repGainedFromNews).coerceIn(0, 100)/val (baseUpdatedRep, repBreakdown) = calculateDailyReputation(currentState, processedItemIdsThisDay)\n                val updatedReputation = (baseUpdatedRep + repGainedFromNews).coerceIn(0, 100)\n                val finalRepBreakdown = repBreakdown/g' app/src/main/java/com/example/viewmodel/GameViewModel.kt
+
+sed -i '' 's/reputation = updatedReputation,/reputation = updatedReputation,\n                    reputationBreakdown = finalRepBreakdown,/g' app/src/main/java/com/example/viewmodel/GameViewModel.kt

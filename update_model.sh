@@ -1,0 +1,1 @@
+sed -i '' 's/data class ContractOffer(/enum class ContractType {\n    DAILY_QUOTA,\n    BULK_DEADLINE\n}\n\ndata class ContractOffer(\n    val contractType: ContractType = ContractType.DAILY_QUOTA,\n    val targetTotalQuantity: Int = 0,\n    val fulfilledQuantity: Int = 0,/g' app/src/main/java/com/example/model/B2BContract.kt

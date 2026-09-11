@@ -1,0 +1,1 @@
+sed -i '' 's/isJunk = isJunk/isJunk = isJunk,\n                        minReputationRequired = if (isJunk) 0 else kotlin.random.Random.nextInt(0, (currentState.reputation + 20).coerceAtMost(100))/g' app/src/main/java/com/example/viewmodel/GameViewModel.kt

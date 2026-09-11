@@ -1,0 +1,6 @@
+{
+  "name": "Dairy Tycoon",
+  "description": "2D Business management and dairy manufacturing empire simulator with FIFO inventory, dynamic markets, and tech progression.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

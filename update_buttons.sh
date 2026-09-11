@@ -1,0 +1,1 @@
+sed -i '' 's/onClick = { onAccept(offer.id) },/enabled = gameState.reputation >= offer.minReputationRequired,\n                                onClick = { onAccept(offer.id) },/g' app/src/main/java/com/example/ui/screens/B2BContractsScreen.kt

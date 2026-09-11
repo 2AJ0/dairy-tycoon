@@ -1,0 +1,1 @@
+sed -i '' 's/MarketProductCard(/val repMultiplier = 1.0 + (gameState.reputation \/ 100.0) \* gameState.playerSkills.silverTongueRepBonusMultiplier\n            MarketProductCard(/g' app/src/main/java/com/example/ui/screens/MarketTab.kt
