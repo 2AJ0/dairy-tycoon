@@ -458,6 +458,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     notes.add("📈 Investment Returns: +$${String.format("%.2f", investmentEarnings)} at ${investmentRate * 100}%")
                 }
 
+                var stolenCashToday = 0.0
                 var currentCash = currentLiquidCash - (maintenanceCost + feedCost + interestCharge + executiveSalary) + eventCashBonus
 
                 // Corporate Sabotage / Digital Fraud attempt
@@ -782,7 +783,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 var missedEventId: String? = currentState.missedDeliveryEvent
                 var contractsRevenueToday = 0.0
                 var contractPenaltiesToday = 0.0
-                var stolenCashToday = 0.0
 
                 currentState.activeContracts.forEach { contract ->
                     val targetProdId = contract.targetProduct
