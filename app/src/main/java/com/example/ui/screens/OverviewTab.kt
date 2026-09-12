@@ -146,6 +146,20 @@ fun OverviewTab(
                                 style = MaterialTheme.typography.labelSmall
                             )
                         }
+                        
+                        val passiveIncome = gameState.subsidiaryCompanyIds.sumOf { subId ->
+                            val rival = gameState.rivalCompanies.find { it.id == subId } ?: com.example.model.RivalCatalog.getRivalById(subId)
+                            (rival.netWorth * 0.02) + (rival.stockPrice * 50)
+                        }
+                        if (passiveIncome > 0) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "+ $${String.format("%.2f", passiveIncome)}/day (Passive)",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = BullishGreen
+                            )
+                        }
                     }
                 }
 

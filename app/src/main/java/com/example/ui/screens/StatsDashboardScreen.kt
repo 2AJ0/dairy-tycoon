@@ -245,6 +245,124 @@ fun StatsDashboardScreen(
                 }
             }
 
+            // Financial Graph Section
+            item {
+                StatsSectionCard(
+                    title = "Financial History (Last 14 Days)",
+                    icon = Icons.Default.BarChart,
+                    iconTint = BullishGreen
+                ) {
+                    val recentHistory = gameState.financialHistory.takeLast(14)
+                    
+                    if (recentHistory.isEmpty()) {
+                        Text(
+                            text = "No financial data available yet.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        )
+                    } else {
+                        val last7Days = recentHistory.takeLast(7)
+                        val avgRev7 = if (last7Days.isNotEmpty()) last7Days.sumOf { it.totalRevenue } / last7Days.size else 0.0
+                        val avgExp7 = if (last7Days.isNotEmpty()) last7Days.sumOf { it.totalExpenses } / last7Days.size else 0.0
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("7-Day Avg Revenue", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("$${String.format("%,.0f", avgRev7)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = BullishGreen)
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("7-Day Avg Spend", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("$${String.format("%,.0f", avgExp7)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = BearishRed)
+                            }
+                        }
+                        
+                        val maxVal = recentHistory.maxOfOrNull { maxOf(it.totalRevenue, it.totalExpenses) }?.toFloat()?.coerceAtLeast(100f) ?: 100f
+                        
+                        androidx.compose.foundation.Canvas(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp)
+                                .padding(vertical = 8.dp)
+                        ) {
+                            val w = size.width
+                            val h = size.height
+                            
+                            // Draw grid lines
+                            for (i in 0..4) {
+                                val y = h - (h * (i / 4f))
+                                drawLine(
+                                    color = Color.LightGray.copy(alpha = 0.3f),
+                                    start = androidx.compose.ui.geometry.Offset(0f, y),
+                                    end = androidx.compose.ui.geometry.Offset(w, y),
+                                    strokeWidth = 1f
+                                )
+                            }
+                            
+                            if (recentHistory.size > 1) {
+                                val stepX = w / (recentHistory.size - 1).toFloat()
+                                val revPath = androidx.compose.ui.graphics.Path()
+                                val expPath = androidx.compose.ui.graphics.Path()
+                                
+                                recentHistory.forEachIndexed { index, record ->
+                                    val x = index * stepX
+                                    val revY = h - ((record.totalRevenue.toFloat() / maxVal) * h)
+                                    val expY = h - ((record.totalExpenses.toFloat() / maxVal) * h)
+                                    
+                                    if (index == 0) {
+                                        revPath.moveTo(x, revY)
+                                        expPath.moveTo(x, expY)
+                                    } else {
+                                        revPath.lineTo(x, revY)
+                                        expPath.lineTo(x, expY)
+                                    }
+                                    
+                                    drawCircle(color = BullishGreen, radius = 6f, center = androidx.compose.ui.geometry.Offset(x, revY))
+                                    drawCircle(color = BearishRed, radius = 6f, center = androidx.compose.ui.geometry.Offset(x, expY))
+                                }
+                                
+                                drawPath(
+                                    path = revPath,
+                                    color = BullishGreen,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
+                                )
+                                drawPath(
+                                    path = expPath,
+                                    color = BearishRed,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
+                                )
+                            } else if (recentHistory.size == 1) {
+                                val record = recentHistory.first()
+                                val revY = h - ((record.totalRevenue.toFloat() / maxVal) * h)
+                                val expY = h - ((record.totalExpenses.toFloat() / maxVal) * h)
+                                drawCircle(color = BullishGreen, radius = 6f, center = androidx.compose.ui.geometry.Offset(w/2, revY))
+                                drawCircle(color = BearishRed, radius = 6f, center = androidx.compose.ui.geometry.Offset(w/2, expY))
+                            }
+                        }
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(BullishGreen))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Revenue", style = MaterialTheme.typography.labelSmall)
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(BearishRed))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Expenses", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
+            }
+
             // Dairy Production & Supply Chain
             item {
                 StatsSectionCard(

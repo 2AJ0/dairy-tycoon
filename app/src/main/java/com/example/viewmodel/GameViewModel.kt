@@ -468,6 +468,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         val stolen = (currentCash * 0.10).coerceAtLeast(100.0).coerceAtMost(2500.0)
                         if (currentCash >= stolen) {
                             currentCash -= stolen
+                            stolenCashToday += stolen
                             notes.add("⚠️ Corporate Sabotage! Rival hackers stole $${String.format("%.2f", stolen)} from liquid reserves.")
                         }
                     }
@@ -780,6 +781,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 var completedContractsDelta = 0
                 var missedEventId: String? = currentState.missedDeliveryEvent
                 var contractsRevenueToday = 0.0
+                var contractPenaltiesToday = 0.0
+                var stolenCashToday = 0.0
 
                 currentState.activeContracts.forEach { contract ->
                     val targetProdId = contract.targetProduct
@@ -822,6 +825,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                             val nextDays = contract.daysRemaining - 1
                             if (nextDays <= 0) {
                                 currentCash -= contract.penaltyAmount
+                                contractPenaltiesToday += contract.penaltyAmount
                                 completedContractsDelta++
                                 notes.add("❌ Bulk Failed: Failed to deliver ${contract.targetTotalQuantity}x ${targetProduct.name} to ${rival.name} in time! Fined -$${String.format("%.2f", contract.penaltyAmount)}.")
                             } else {
@@ -871,6 +875,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                                 updatedActiveContracts.add(contract.copy(daysRemaining = nextDays, failedDays = newFailedDays))
                             } else {
                                 currentCash -= contract.penaltyAmount
+                                contractPenaltiesToday += contract.penaltyAmount
                                 val nextDays = contract.daysRemaining - 1
                                 notes.add("⚠️ Daily Default: Shortfall on ${dailyQuota}x ${targetProduct.name} for ${rival.name}! Fined -$${String.format("%.2f", contract.penaltyAmount)}.")
                                 if (nextDays <= 0) {
@@ -1349,6 +1354,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 
+                val dailyRevenue = automatedSalesRevenue + autoSellRevenueToday + contractsRevenueToday + totalDividendsToday + eventCashBonus + investmentEarnings
+                val dailyExpenses = maintenanceCost + operatingCostFromProcessing + feedCost + interestCharge + executiveSalary + contractPenaltiesToday + stolenCashToday
+                val newFinancialRecord = com.example.model.DailyFinancialRecord(
+                    day = currentDay,
+                    totalRevenue = dailyRevenue,
+                    totalExpenses = dailyExpenses
+                )
+                val newFinancialHistory = (currentState.financialHistory + newFinancialRecord).takeLast(14)
+                
                 val updatedStats = currentState.stats.copy(
                     totalDaysPlayed = currentState.stats.totalDaysPlayed + 1,
                     totalMilkProduced = currentState.stats.totalMilkProduced + rawProducedUnits,
@@ -1373,6 +1387,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     activeNewsEvent = activeNews,
                     activeCrises = updatedCrises,
                     newCrisisFired = currentState.newCrisisFired ?: newCrisisFired,
+                    financialHistory = newFinancialHistory,
                     inventory = evaluatedInventory.toList(),
                     lifetimeSpoilage = currentState.lifetimeSpoilage + spoiledCount,
                     buildings = effectiveBuildings,

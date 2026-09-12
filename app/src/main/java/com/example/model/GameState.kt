@@ -15,6 +15,13 @@ package com.example.model
 /**
  * Type of active construction or research project.
  */
+
+data class DailyFinancialRecord(
+    val day: Int,
+    val totalRevenue: Double,
+    val totalExpenses: Double
+)
+
 enum class ProjectType {
     FACILITY_CONSTRUCTION,
     FACILITY_UPGRADE,
@@ -141,6 +148,7 @@ data class GameState(
     val activeProjects: List<ActiveProject> = emptyList(),
     val stats: LifetimeStats = LifetimeStats(),
     val activeNewsEvent: NewsEvent? = null,
+    val financialHistory: List<DailyFinancialRecord> = emptyList(),
     val inventory: List<InventoryBatch> = listOf(
         InventoryBatch(
             itemId = ProductCatalog.RAW_MILK.id,
