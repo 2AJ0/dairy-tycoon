@@ -587,9 +587,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         }
                         
                         if (feedRequired > 0) {
-                            yield = (yield * (feedUsed.toDouble() / feedRequired)).toInt()
+                            val originalYield = yield
+                            val feedRatio = feedUsed.toDouble() / feedRequired
+                            yield = (yield * feedRatio).toInt()
+                            if (feedUsed < feedRequired) {
+                                notes.add("⚠️ Starvation: ${building.name} produced ${yield}/${originalYield} milk due to lack of feed (${feedUsed}/${feedRequired}).")
+                                android.util.Log.d("TycoonDebug", "Yield reduced for ${building.name} due to missing feed. feedUsed: $feedUsed, feedRequired: $feedRequired")
+                            }
                         }
                         
+                        android.util.Log.d("TycoonDebug", "PRE-ADD TRACE: Attempting to deposit +$yield units of Milk to inventory from ${building.name}.")
                         if (yield > 0) {
                             rawProducedUnits += yield
                             processedItemIdsThisDay.add(ProductCatalog.RAW_MILK.id)
@@ -605,6 +612,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                                 dayProduced = currentDay + 1
                             )
                             workingInventory.add(milkBatch)
+                        } else {
+                            android.util.Log.d("TycoonDebug", "PRE-ADD TRACE: Yield was 0, skipping inventory deposit.")
                         }
                     } else if (building.type == BuildingType.RD_LAB) {
                         researchPointsGained += building.currentResearchPoints
