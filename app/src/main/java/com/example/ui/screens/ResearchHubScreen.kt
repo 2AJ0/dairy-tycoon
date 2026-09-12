@@ -411,8 +411,20 @@ private fun RdTechsList(
         Box(
             modifier = Modifier.size(contentWidthDp, contentHeightDp)
         ) {
+            // Helper function for progressive disclosure
+            fun isNodeVisible(n: TechTreeNode): Boolean {
+                if (unlockedIds.contains(n.id) || n.rpCost == 0) return true
+                if (n.parentId == null) return true
+                val parent = TechCatalog.ALL_TECHS.find { it.id == n.parentId }
+                return parent != null && (unlockedIds.contains(parent.id) || parent.rpCost == 0)
+            }
+
             Canvas(modifier = Modifier.matchParentSize()) {
                 for (node in nodes) {
+                    if (!isNodeVisible(node)) continue
+                    val parentNode = node.parentId?.let { pId -> nodes.find { it.id == pId } }
+                    if (parentNode != null && !isNodeVisible(parentNode)) continue
+
                     val isResearched = unlockedIds.contains(node.id) || node.rpCost == 0
                     if (node.parentId != null) {
                         val parentPos = nodePositions[node.parentId]
@@ -437,8 +449,11 @@ private fun RdTechsList(
             }
 
             nodes.forEach { node ->
+                if (!isNodeVisible(node)) return@forEach
+
                 val isResearched = unlockedIds.contains(node.id) || node.rpCost == 0
-                val isLocked = node.parentId != null && !unlockedIds.contains(node.parentId)
+                val parentNodeModel = TechCatalog.ALL_TECHS.find { it.id == node.parentId }
+                val isLocked = node.parentId != null && !unlockedIds.contains(node.parentId) && parentNodeModel?.rpCost != 0
                 val pos = nodePositions[node.id] ?: Offset.Zero
 
                 val xDp = with(density) { pos.x.toDp() }
