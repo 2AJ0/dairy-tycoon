@@ -185,6 +185,8 @@ data class GameState(
     val mentors: List<Mentor> = MentorCatalog.ALL_MENTORS,
     val netWorthPhase: NetWorthPhase = NetWorthPhase.STARTUP,
     val isB2BUnlocked: Boolean = false,
+    val activeFeedId: String = "cow_feed_basic",
+    val isAutoFeedEnabled: Boolean = false,
     val unlockedFeatures: UnlockedFeatures = UnlockedFeatures(),
     val autoBuySubscriptions: Map<String, Boolean> = emptyMap(),
     val autoSellSubscriptions: Map<String, Boolean> = emptyMap(),

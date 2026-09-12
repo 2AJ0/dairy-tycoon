@@ -51,6 +51,8 @@ fun MarketTab(
     onSellAllOfProduct: (String) -> Unit,
     onToggleAutoBuy: (String, Boolean) -> Unit,
     onToggleAutoSell: (String, Boolean) -> Unit,
+    onSetActiveFeed: (String) -> Unit,
+    onToggleAutoFeed: (Boolean) -> Unit,
     evaluateAction: (com.example.model.GameAction) -> com.example.model.GuidanceState,
     modifier: Modifier = Modifier
 ) {
@@ -69,7 +71,9 @@ fun MarketTab(
 
             val requiredTechId = when (product.id) {
                 ProductCatalog.RAW_MILK.id -> null
-                ProductCatalog.COW_FEED.id -> null
+                ProductCatalog.BASIC_COW_FEED.id -> null
+                ProductCatalog.PREMIUM_COW_FEED.id -> "tech_premium_feed"
+                ProductCatalog.SYNTHETIC_COW_FEED.id -> "tech_synthetic_feed"
                 ProductCatalog.GLASS_BOTTLES.id -> "tech_pasteurization"
                 ProductCatalog.PASTEURIZED_MILK.id -> "tech_pasteurization"
                 ProductCatalog.CREAM.id -> "tech_fermentation"
@@ -286,6 +290,70 @@ fun MarketTab(
         }
                                                                                 
         item {
+            val availableFeeds = mutableListOf<com.example.model.Product>()
+            if (true) availableFeeds.add(com.example.model.ProductCatalog.getById("cow_feed_basic"))
+            if (gameState.unlockedTechIds.contains("tech_premium_feed")) availableFeeds.add(com.example.model.ProductCatalog.getById("cow_feed_premium"))
+            if (gameState.unlockedTechIds.contains("tech_synthetic_feed")) availableFeeds.add(com.example.model.ProductCatalog.getById("cow_feed_synthetic"))
+            
+            val activeFeed = com.example.model.ProductCatalog.getById(gameState.activeFeedId)
+            var expanded by remember { mutableStateOf(false) }
+
+            OutlinedCard(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🌾", fontSize = 24.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cattle Feed Procurement", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Cows require 1 unit of active feed per pasture level daily. Select the feed tier to consume.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box {
+                            OutlinedButton(onClick = { expanded = true }) {
+                                Text("${activeFeed.emoji} ${activeFeed.name}")
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Feed")
+                            }
+                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                availableFeeds.forEach { feed ->
+                                    DropdownMenuItem(
+                                        text = { Text("${feed.emoji} ${feed.name} ($${String.format("%.2f", feed.basePrice)})") },
+                                        onClick = {
+                                            onSetActiveFeed(feed.id)
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Auto-Buy", style = MaterialTheme.typography.labelMedium)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Switch(
+                                checked = gameState.isAutoFeedEnabled,
+                                onCheckedChange = { onToggleAutoFeed(it) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+                                                                                
+        item {
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -363,7 +431,7 @@ fun MarketTab(
                 unitsSoldToday = unitsSoldToday,
                 isAutoBuyEnabled = gameState.autoBuySubscriptions[product.id] == true,
                 isAutoSellEnabled = gameState.autoSellSubscriptions[product.id] == true,
-                dailyUsageNeeded = if (product.id == "cow_feed") {
+                dailyUsageNeeded = if (product.id.startsWith("cow_feed")) {
                     gameState.buildings.filter { it.type == BuildingType.PASTURE && it.isConstructed && it.isOperational }.sumOf { it.level }
                 } else if (product.id == "glass_bottles") {
                     gameState.buildings.filter { it.isConstructed && it.isOperational && it.activeRecipe?.outputItemId == "pasteurized_milk" }.sumOf { it.currentProcessingCapacity }

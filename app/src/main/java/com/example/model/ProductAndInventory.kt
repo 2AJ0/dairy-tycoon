@@ -37,15 +37,37 @@ enum class ProductCategory {
 }
 
 object ProductCatalog {
-    val COW_FEED = Product(
-        id = "cow_feed",
-        name = "Premium Cow Feed",
+    val BASIC_COW_FEED = Product(
+        id = "cow_feed_basic",
+        name = "Basic Cow Feed",
         category = ProductCategory.CONSUMABLE,
-        description = "High-nutrition feed required for pastures.",
-        basePrice = 1.20,
+        description = "Standard grass and hay mixture. (Yield x1.0)",
+        basePrice = 0.50,
         shelfLifeDays = 30,
         tier = 1,
+        emoji = "🌱"
+    )
+
+    val PREMIUM_COW_FEED = Product(
+        id = "cow_feed_premium",
+        name = "Premium Cow Feed",
+        category = ProductCategory.CONSUMABLE,
+        description = "High-nutrition feed required for pastures. (Yield x1.2)",
+        basePrice = 1.20,
+        shelfLifeDays = 30,
+        tier = 2,
         emoji = "🌾"
+    )
+
+    val SYNTHETIC_COW_FEED = Product(
+        id = "cow_feed_synthetic",
+        name = "Synthetic Nutrients",
+        category = ProductCategory.CONSUMABLE,
+        description = "Lab-grown nutritional paste. (Yield x1.5)",
+        basePrice = 3.00,
+        shelfLifeDays = 90,
+        tier = 3,
+        emoji = "🧪"
     )
 
     val GLASS_BOTTLES = Product(
@@ -192,7 +214,9 @@ object ProductCatalog {
     )
 
     val ALL_PRODUCTS = listOf(
-        COW_FEED,
+        BASIC_COW_FEED,
+        PREMIUM_COW_FEED,
+        SYNTHETIC_COW_FEED,
         GLASS_BOTTLES,
         BIO_SYNTH_DAIRY,
         RAW_MILK,

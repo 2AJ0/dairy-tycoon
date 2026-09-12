@@ -282,7 +282,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun calculateDailyUsage(state: GameState, itemId: String): Int {
         var needed = 0
-        if (itemId == "cow_feed") {
+        if (itemId.startsWith("cow_feed")) {
             // Pastures consume 1 feed per pasture level
             needed += state.buildings.filter { it.type == BuildingType.PASTURE && it.isConstructed && it.isOperational }.sumOf { it.level }
         } else if (itemId == "glass_bottles") {
@@ -342,6 +342,37 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 // 0. Auto-Buy Procurement Phase (Consumables)
                 var currentLiquidCash = currentState.cash
                 val workingInventory = currentState.inventory.toMutableList()
+                var autoFeedCost = 0.0
+
+                // 0.1 Dedicated Auto-Feed Procurement
+                if (currentState.isAutoFeedEnabled) {
+                    val feedNeeded = currentState.buildings.filter { it.type == com.example.model.BuildingType.PASTURE && it.isConstructed && it.isOperational && !it.isSpunOff }.sumOf { it.level }
+                    val activeFeed = com.example.model.ProductCatalog.getById(currentState.activeFeedId)
+                    val currentFeedInv = workingInventory.filter { it.itemId == currentState.activeFeedId }.sumOf { it.quantity }
+                    val deficit = (feedNeeded - currentFeedInv).coerceAtLeast(0)
+                    
+                    if (deficit > 0) {
+                        val spotPrice = currentState.marketPrices[currentState.activeFeedId]?.currentPrice ?: activeFeed.basePrice
+                        val affordableUnits = (currentLiquidCash / spotPrice).toInt()
+                        val unitsToBuy = minOf(deficit, affordableUnits)
+                        
+                        if (unitsToBuy > 0) {
+                            currentLiquidCash -= (unitsToBuy * spotPrice)
+                            autoFeedCost += (unitsToBuy * spotPrice)
+                            workingInventory.add(
+                                com.example.model.InventoryBatch(
+                                    itemId = currentState.activeFeedId,
+                                    itemName = activeFeed.name,
+                                    quantity = unitsToBuy,
+                                    quality = 1.0,
+                                    maxShelfLife = activeFeed.shelfLifeDays,
+                                    dayProduced = currentDay
+                                )
+                            )
+                            notes.add("🛒 Feed Procurement: Auto-bought $unitsToBuy units of ${activeFeed.name}.")
+                        }
+                    }
+                }
                 
                 currentState.autoBuySubscriptions.forEach { (itemId, isActive) ->
                     if (isActive) {
@@ -432,12 +463,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         if (hasRadiativeCooling) 0.0 else it.currentMaintenance 
                     }
                 var maintenanceCost = rawMaintenance * (1.0 - currentState.playerSkills.maintenanceDiscountPercent)
-                var feedCost = currentState.buildings.filter { it.isConstructed && it.type == BuildingType.PASTURE && it.isOperational && !it.isSpunOff }
-                    .sumOf { it.level * 12.0 }
+                var feedCost = autoFeedCost
                 
                 if (chadBuff) {
                     maintenanceCost *= 0.85
-                    feedCost *= 0.85
                 }
                 val interestCharge = currentState.bank.dailyInterestCharge
                 val eventCashBonus = if (isNewEventTriggered) (activeNews?.cashBonus ?: 0.0) else 0.0
@@ -459,7 +488,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 var stolenCashToday = 0.0
-                var currentCash = currentLiquidCash - (maintenanceCost + feedCost + interestCharge + executiveSalary) + eventCashBonus
+                var currentCash = currentLiquidCash - (maintenanceCost + interestCharge + executiveSalary) + eventCashBonus
 
                 // Corporate Sabotage / Digital Fraud attempt
                 if (Random.nextDouble() < 0.05) {
@@ -570,7 +599,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         if (barnabyBuff) yield = (yield * 1.10).toInt()
                         
                         val feedRequired = building.level
-                        val availableFeedBatches = workingInventory.filter { it.itemId == "cow_feed" }
+                        val activeFeedId = currentState.activeFeedId
+                        val activeFeedMultiplier = when(activeFeedId) {
+                            "cow_feed_basic" -> 1.0
+                            "cow_feed_premium" -> 1.2
+                            "cow_feed_synthetic" -> 1.5
+                            else -> 1.0
+                        }
+                        
+                        val availableFeedBatches = workingInventory.filter { it.itemId == activeFeedId }
                         val totalFeedAvailable = availableFeedBatches.sumOf { it.quantity }
                         val feedUsed = minOf(feedRequired, totalFeedAvailable)
                         
@@ -591,10 +628,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         if (feedRequired > 0) {
                             val originalYield = yield
                             val feedRatio = feedUsed.toDouble() / feedRequired
-                            yield = (yield * feedRatio).toInt()
+                            yield = (yield * feedRatio * activeFeedMultiplier).toInt()
                             if (feedUsed < feedRequired) {
-                                notes.add("⚠️ Starvation: ${building.name} produced ${yield}/${originalYield} milk due to lack of feed (${feedUsed}/${feedRequired}).")
-                                android.util.Log.d("TycoonDebug", "Yield reduced for ${building.name} due to missing feed. feedUsed: $feedUsed, feedRequired: $feedRequired")
+                                notes.add("⚠️ Starvation: ${building.name} produced ${yield}/${(originalYield * activeFeedMultiplier).toInt()} milk due to lack of feed (${feedUsed}/${feedRequired}).")
+                            } else if (activeFeedMultiplier > 1.0) {
+                                // notes.add("✨ ${building.name} yield boosted by ${activeFeedMultiplier}x from feed!") // Optional, might be too spammy
                             }
                         }
                         
@@ -1940,7 +1978,16 @@ fun unlockTechnology(techId: String) {
     }
 }
 
-fun toggleAutoBuy(itemId: String, isActive: Boolean) {
+
+    fun setActiveFeed(feedId: String) {
+        _gameState.update { it.copy(activeFeedId = feedId) }
+    }
+
+    fun toggleAutoFeed(isActive: Boolean) {
+        _gameState.update { it.copy(isAutoFeedEnabled = isActive) }
+    }
+
+    fun toggleAutoBuy(itemId: String, isActive: Boolean) {
     _gameState.update { current ->
         val updatedMap = current.autoBuySubscriptions.toMutableMap()
         if (isActive) {

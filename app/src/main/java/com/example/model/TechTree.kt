@@ -319,6 +319,14 @@ object TechCatalog {
         id = "tech_industrial_throughput_1", name = "High-Volume Processing", rpCost = 50,
         parentId = "tech_manual_logistics", gridX = 200f, gridY = 300f, daysToComplete = 3, iconEmoji = "⚙️", category = ResearchCategory.INDUSTRY
     )
+    val PREMIUM_FEED = TechTreeNode(
+        id = "tech_premium_feed", name = "Premium Cattle Nutrition", rpCost = 30,
+        parentId = "tech_manual_logistics", gridX = 400f, gridY = -200f, daysToComplete = 3, iconEmoji = "🌾", category = ResearchCategory.INDUSTRY
+    )
+    val SYNTHETIC_FEED = TechTreeNode(
+        id = "tech_synthetic_feed", name = "Lab-Grown Nutrients", rpCost = 80,
+        parentId = "tech_premium_feed", gridX = 600f, gridY = -200f, daysToComplete = 5, iconEmoji = "🧪", category = ResearchCategory.INDUSTRY
+    )
     val INDUSTRIAL_THROUGHPUT_2 = TechTreeNode(
         id = "tech_industrial_throughput_2", name = "Mega-Factory Architecture", rpCost = 150,
         parentId = "tech_industrial_throughput_1", gridX = 400f, gridY = 300f, daysToComplete = 5, iconEmoji = "🏭", category = ResearchCategory.INDUSTRY
@@ -373,7 +381,7 @@ object TechCatalog {
         
         // Industry
         MANUAL_LOGISTICS, AUTO_MILKING, DRONE_DELIVERY, BASIC_COLD_STORAGE, AI_TEMP_CONTROL, CONSTRUCTION_CREW_1,
-        INDUSTRIAL_THROUGHPUT_1, INDUSTRIAL_THROUGHPUT_2, INDUSTRIAL_THROUGHPUT_3,
+        INDUSTRIAL_THROUGHPUT_1, INDUSTRIAL_THROUGHPUT_2, INDUSTRIAL_THROUGHPUT_3, PREMIUM_FEED, SYNTHETIC_FEED,
         
         // Company
         CORPORATE_INC, LOBBYING, SHELL_CORP, ALGO_TRADING, HOSTILE_AI, DEDICATED_LAB_1, CYBERSECURITY_1, CYBERSECURITY_2
