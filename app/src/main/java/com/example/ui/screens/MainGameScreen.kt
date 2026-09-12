@@ -708,6 +708,8 @@ fun MainGameScreen(
                                         onSellAllOfProduct = { pId -> viewModel.sellAllOfProduct(pId) },
                                         onToggleAutoBuy = { pId, active -> viewModel.toggleAutoBuy(pId, active) },
                                         onToggleAutoSell = { pId, active -> viewModel.toggleAutoSell(pId, active) },
+                                        onSetActiveFeed = { fId -> viewModel.setActiveFeed(fId) },
+                                        onToggleAutoFeed = { active -> viewModel.toggleAutoFeed(active) },
                                         evaluateAction = { action -> viewModel.evaluateAction(action) }
                                     )
                                 }
