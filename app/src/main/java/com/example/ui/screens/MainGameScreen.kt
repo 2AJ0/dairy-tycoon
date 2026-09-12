@@ -63,6 +63,8 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -606,6 +608,17 @@ fun MainGameScreen(
         ) {
             when (currentDrawerDestination) {
                 DrawerDestination.DASHBOARD -> {
+                    val pagerState = rememberPagerState(
+                        initialPage = selectedTab,
+                        pageCount = { NavigationTab.values().size }
+                    )
+                    
+                    LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
+                        if (!pagerState.isScrollInProgress && selectedTab != pagerState.currentPage) {
+                            selectedTab = pagerState.currentPage
+                        }
+                    }
+
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
                         topBar = {
@@ -633,7 +646,10 @@ fun MainGameScreen(
                                 NavigationTab.values().forEachIndexed { index, tab ->
                                     NavigationBarItem(
                                         selected = selectedTab == index,
-                                        onClick = { selectedTab = index },
+                                        onClick = { 
+                                            selectedTab = index
+                                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                                        },
                                         icon = {
                                             Icon(
                                                 imageVector = tab.icon,
@@ -665,7 +681,11 @@ fun MainGameScreen(
                                 .fillMaxSize()
                                 .padding(innerPadding)
                         ) {
-                            when (NavigationTab.values()[selectedTab]) {
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier.fillMaxSize()
+                            ) { page ->
+                                when (NavigationTab.values()[page]) {
                                 NavigationTab.OVERVIEW -> {
                                     OverviewTab(
                                         gameState = gameState
@@ -718,6 +738,7 @@ fun MainGameScreen(
                                         onWithdraw = { amt -> viewModel.withdrawFunds(amt) }
                                     )
                                 }
+                            }
                             }
                         }
                     }
