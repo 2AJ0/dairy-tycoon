@@ -1855,45 +1855,58 @@ private fun tryAssignProject(current: GameState, baseProject: ActiveProject): Ac
 }
 
 fun unlockTechnology(techId: String) {
+    android.util.Log.d("ResearchDebug", "Attempting to unlock node: $techId")
     _gameState.update { current ->
-        if (current.researchNodeStatuses[techId] == NodeStatus.COMPLETED) {
+        if (current.unlockedTechIds.contains(techId)) {
             _snackBarMessage.value = "Technology is already researched."
             return@update current
         }
 
-        if (current.isTechUnderResearch(techId)) {
+        if (current.activeProjects.any { it.type == ProjectType.TECH_RESEARCH && it.targetId == techId }) {
             _snackBarMessage.value = "R&D research is already underway for this technology!"
             return@update current
         }
 
-        val node = ResearchCatalog.ALL_NODES.find { it.id == techId }
+        val node = TechCatalog.ALL_TECHS.firstOrNull { it.id == techId }
         if (node == null) {
             _snackBarMessage.value = "Unknown technology."
             return@update current
         }
 
-        val missingPrereqs = node.prerequisites.filter { current.researchNodeStatuses[it] != NodeStatus.COMPLETED }
-        if (missingPrereqs.isNotEmpty()) {
-            val missingTitles = missingPrereqs.mapNotNull { prereqId -> 
-                ResearchCatalog.ALL_NODES.find { it.id == prereqId }?.title 
-            }.joinToString(", ")
-            _snackBarMessage.value = "Requires prerequisite research: $missingTitles first!"
+        val parentId = node.parentId
+        val prereqsMet = parentId == null || current.unlockedTechIds.contains(parentId) || TechCatalog.ALL_TECHS.firstOrNull { it.id == parentId }?.rpCost == 0
+        android.util.Log.d("ResearchDebug", "Prerequisites met: $prereqsMet")
+
+        if (!prereqsMet) {
+            val missingTitle = TechCatalog.ALL_TECHS.firstOrNull { it.id == parentId }?.name ?: "Prerequisite"
+            _snackBarMessage.value = "Requires prerequisite research: $missingTitle first!"
             return@update current
         }
 
-        if (current.cash < node.researchCost) {
-            val formattedCash = String.format("%.2f", current.cash)
-            _snackBarMessage.value = "Insufficient Cash. Requires $${node.researchCost} (Have $$formattedCash)."
+        val hasRP = current.researchPoints >= node.rpCost
+        android.util.Log.d("ResearchDebug", "Sufficient RP: $hasRP (Cost: ${node.rpCost}, Current: ${current.researchPoints})")
+
+        if (!hasRP) {
+            _snackBarMessage.value = "Insufficient RP. Requires ${node.rpCost} (Have ${current.researchPoints})."
             return@update current
+        }
+
+        if (node.daysToComplete <= 0) {
+            _snackBarMessage.value = "Unlocked ${node.name} instantly!"
+            android.util.Log.d("ResearchDebug", "Unlock successful (instant), new state emitted.")
+            return@update checkAchievements(current.copy(
+                researchPoints = current.researchPoints - node.rpCost,
+                unlockedTechIds = current.unlockedTechIds + techId
+            ))
         }
 
         val newProject = ActiveProject(
             type = ProjectType.TECH_RESEARCH,
             targetId = techId,
-            targetName = node.title,
-            iconEmoji = "🔬",
-            totalDays = node.researchTimeDays,
-            daysRemaining = node.researchTimeDays
+            targetName = node.name,
+            iconEmoji = node.iconEmoji,
+            totalDays = node.daysToComplete,
+            daysRemaining = node.daysToComplete
         )
 
         val assignedProject = tryAssignProject(current, newProject)
@@ -1902,15 +1915,12 @@ fun unlockTechnology(techId: String) {
             return@update current
         }
 
-        _snackBarMessage.value = "Initiated R&D on ${node.title}! (${node.researchTimeDays} days to finish)."
-
-        val updatedStatuses = current.researchNodeStatuses.toMutableMap()
-        updatedStatuses[techId] = NodeStatus.RESEARCHING
+        _snackBarMessage.value = "Initiated R&D on ${node.name}! (${node.daysToComplete} days to finish)."
+        android.util.Log.d("ResearchDebug", "Unlock successful (assigned project), new state emitted.")
 
         checkAchievements(current.copy(
-            cash = current.cash - node.researchCost,
-            activeProjects = current.activeProjects + assignedProject,
-            researchNodeStatuses = updatedStatuses
+            researchPoints = current.researchPoints - node.rpCost,
+            activeProjects = current.activeProjects + assignedProject
         ))
     }
 }
